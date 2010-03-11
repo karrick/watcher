@@ -19,7 +19,7 @@ class Watcher
 # module Watcher
 
   # :stopdoc:
-  VERSION = '1.2.2'
+  VERSION = '1.2.4'
   LIBPATH = ::File.expand_path(::File.dirname(__FILE__)) + ::File::SEPARATOR
   PATH = ::File.dirname(LIBPATH) + ::File::SEPARATOR
   # :startdoc:
@@ -58,8 +58,6 @@ class Watcher
 
     Dir.glob(search_me).sort.each {|rb| require rb}
   end
-
-# end  # module Watcher
 
   # Array of actions to perform when an Exception is thrown by code in the
   # yield block.
@@ -256,7 +254,6 @@ class Watcher
     # * Any keys provided by the user simply cause the associated key
     #   values provided by the consumer code to overwrite the values
     #   provided in the literal Hash below.  Isn't Ruby fun?
-#    attributes.delete(:output) if attributes[:output] == nil
     attributes.delete(:output_path) if attributes[:output_path] == nil
     attributes={
       :default_fail => {:failure => :error},

@@ -4,6 +4,8 @@
 
 2.  MINOR
 
+    * Major code cleanup!  My Ruby coding style has changed a lot in 1.5 years . . .
+
     * Provide Watcher creation option to not display any output;
       useful by other utility classes which do not want to muddy up
       the output.  (another level, for instance :none, which displays
@@ -31,11 +33,7 @@
 
     * Allow more flexible log formatting, such that Watcher yields to a user-supplied method with arity one.  The goal is that Watcher prepares the basic output, yields to the user-supplied formatter, then performs a small amount of post-formatting, if required.  Supposed to allow stripping of @hier if desired.
 
-    * Convert Watcher gem to bones framework.
-
 3.  LOW
-
-    * Figure out how to get ri documentation working.
 
     * Provide a Watcher.destroy method which closes the Watcher instance and
       changes the @@watcher class attribute back to nil.

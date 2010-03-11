@@ -20,7 +20,7 @@ spec = Gem::Specification.new do |s|
 
   # Change these as appropriate
   s.name              = "watcher"
-  s.version           = "1.2.3"
+  s.version           = "1.2.4"
   s.summary           = "Abstracts and combines exception handling and program logging"
   s.author            = "Karrick McDermott"
   s.email             = "karrick@karrick.net"

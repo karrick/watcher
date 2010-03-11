@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 # Event
 #
 # Summary::   Event instance handles exception recovery, proper hierarchical
@@ -18,23 +16,37 @@
 # into the log at the appropriate indention level should an exception be
 # thrown.
 class Event
-  ##### Publically read-write attributes
+  VALID_FAILURES = [:error, :warn]
 
-  ##### Publically read-only attributes
   attr_reader :failure      # what to do if all tries fail (:warn | :error)
   attr_reader :hier         # shows nested levels
   attr_reader :proc         # Proc to call before a retry
   attr_reader :tries        # number of tries remaining
   attr_reader :title        # event title
 
+  # Create a new Event instance with the specified task title, and an optional
+  # prefix for parent event id (used for log replay)
+  def initialize(time, hier, title, fail_actions, relationship)
+    @hier = hier
+    @time = time
+    @title = title
+    @fail_actions = fail_actions
+    @relationship = relationship
+
+    validate_title
+    validate_time
+    validate_hier_and_relationship
+    validate_fail_actions
+  end
+
   # Get an Event which is the child of this event
   def child
     self.dup.child!
   end
 
-  # Make this event into its child
+  # Transform this event into its child
   def child!
-    if @hier.count('.') % 2 == 0 # if even number of periods
+    if child_count_is_even?
       @hier << '.a'
     else
       @hier << '.0'
@@ -54,7 +66,6 @@ class Event
     self
   end
 
-  ########## Return String ready for log
   def to_s
     @time + ': ' + @hier + ' ### ' + @title
   end
@@ -63,111 +74,106 @@ class Event
   private
   ########################################
 
-  # Create a new Event instance with the specified task title, and an optional
-  # prefix for parent event id (used for log replay)
-  def initialize(time, hier, title, fail_actions, relationship)
-    @hier = hier
-    @time = time
-    @title = title
+  def child_count_is_even?
+    @hier.count('.') % 2 == 0 ? true : false
+  end
 
-    # validate title
-    unless title.respond_to? :to_s
+  def validate_title
+    unless @title.respond_to? :to_s
       # Defensive programming against Watcher's caller:
       msg = "Event.initialize: The first argument (title) must respond to" \
-        + " the :to_s method. Your argument class is #{title.class}." \
-        + " Aborting task."
+      + " the :to_s method. Your argument class is #{@title.class}." \
+      + " Aborting task."
       raise ArgumentError.new(msg)
     end
+  end
 
-    # validate time
-    unless time.respond_to? :to_s
+  def validate_time
+    unless @time.respond_to? :to_s
       # Defensive programming against Watcher's caller:
       msg = "Event.initialize: The second argument (time) must respond to" \
-        + " the :to_s method. Your argument class is #{time.class}." \
-        + " Aborting [#{title}]."
+      + " the :to_s method. Your argument class is #{@time.class}." \
+      + " Aborting [#{title}]."
       raise ArgumentError.new(msg)
     end
+  end
 
-    # validate fail actions
-    if fail_actions.kind_of? Hash
-      # validate fail_actions (throws ArgumentError if bad; let caller catch)
-      @proc = fail_actions[:proc]
-      @tries = fail_actions[:tries]
-      @failure = fail_actions[:failure]
-      validate_fail_actions
-    else
-      # Defensive programming against Watcher's caller:
-      msg = "Event.initialize: The fourth argument (fail_actions) must be" \
-        + " a Hash, not a #{fail_actions.class}. Aborting [#{title}]."
-      raise ArgumentError.new(msg)
-    end
-
-    # validate hier argument
-    if hier == nil
+  def validate_hier_and_relationship
+    if @hier == nil
       # If no hier event, then this Event has no parent or siblings.
       @hier = '0'
-    elsif not hier.kind_of? String
+    elsif not @hier.kind_of? String
       # Defensive programming against Watcher.monitor
       msg = "Event.initialize: sixth argument (hier) must be either nil," \
-        + " or of non-zero length String, not a #{hier.class}. Aborting [#{title}]."
+      + " or of non-zero length String, not a #{hier.class}. Aborting [#{@title}]."
       raise ArgumentError.new(msg)
-    elsif hier == ''
+    elsif @hier == ''
       # Defensive programming against Watcher.monitor
       msg = "Event.initialize: sixth argument (hier) must be either nil," \
-        + " or of non-zero length String. Aborting [#{title}]."
+      + " or of non-zero length String. Aborting [#{@title}]."
       raise ArgumentError.new(msg)
     else # this event is related to hier
-      case relationship
+      case @relationship
       when :child
-        @hier = hier
         child!
       when :sibling
-        @hier = hier
         sibling!
       else
         msg = "Event.initialize: fifth argument (relationship) must be one" \
-          + " of either :child or :sibling"
+        + " of either :child or :sibling"
         raise ArgumentError.new(msg)
       end
     end
   end
 
-# Deprecated, but worked fine at the time it was taken out.
-# # Take this Event hier to back up one hier from the call-stack
-# def dec
-#   # knock off the last segment
-#   @hier.sub!(/\.?[^.]+$/, '')
-#   # call sibling to increment parent hier
-#   sibling!
-# end
-
-  # Validate fail_actions parameter (throws ArgumentError if bad)
-  # * Must include either :warn or :error, but not both in Hash.
-  # * If :tries is specified, it must be a Fixnum, and then :proc must also
-  #   be specified, and a valid Proc instance.
-  # * If :tries is not specified, then :proc may not be specified.
   def validate_fail_actions
-    # Either :warn or :error, not both, and not neither.
-    if @failure != :warn and @failure != :error
-      msg = "Event.validate_fail_actions: Must specify either :warn or :error"
+    # validate fail actions
+    if @fail_actions.kind_of? Hash
+      # validate fail_actions (throws ArgumentError if bad; let caller catch)
+      @proc = @fail_actions[:proc]
+      @tries = @fail_actions[:tries]
+      @failure = @fail_actions[:failure]
+      validate_failure
+      validate_proc_and_tries
+    else
+      # Defensive programming against Watcher's caller:
+      msg = "Event.initialize: The fourth argument (fail_actions) must be" \
+      + " a Hash, not a #{@fail_actions.class}. Aborting [#{@title}]."
       raise ArgumentError.new(msg)
     end
+  end
 
-    # If :tries is set, then it must be a Fixnum
-    if @tries != nil
-      if @tries.class != Fixnum or @tries < 2
-        raise ArgumentError.new(':tries must be at least 2 in order to specify a Proc')
-      else # must have a valid Proc
-        if @proc.class != Proc
-          raise ArgumentError.new('must specify a Proc instance when :tries is set')
-        end
-      end
-    else # tries is nil
-      # Ensure :proc not set
-      if @proc != nil
-        raise ArgumentError.new(':tries must be at least 2 in order to specify a Proc')
-      end
-      @tries = 1 # just one try since :proc was nil
+  def validate_failure
+    unless VALID_FAILURES.include?(@failure)
+      raise ArgumentError.new("Must specify item from list #{VALID_FAILURES.inspect}")
     end
   end
+
+  def validate_proc_and_tries
+    @tries = @tries.to_i
+
+    case @proc
+    when nil
+      ensure_tries_not_greater_than_one
+    when Proc
+      ensure_tries_is_valid_integer
+    else
+      raise ArgumentError.new(":proc must be either a Proc object, or nil")
+    end
+  end
+
+  def ensure_tries_not_greater_than_one
+    if @tries > 1
+      raise ArgumentError.new(":tries cannot be greater than one if Proc is not given")
+    end
+  end
+
+  def ensure_tries_is_valid_integer
+    if @tries < 0
+      raise ArgumentError.new(":tries must be greater than -1 if Proc is given")
+    end
+  end
+
+  private :validate_failure, :validate_proc_and_tries
+  private :ensure_tries_not_greater_than_one, :ensure_tries_is_valid_integer
 end

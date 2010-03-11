@@ -1,3 +1,13 @@
+== 1.2.4 2010-03-10
+
+* 1 minor enhancement:
+  * Allow tries to be zero or one for easier use.
+
+== 1.2.3 2010-03-10
+
+* 1 minor enhancement:
+  * Migrated to github
+
 == 1.2.2 2009-05-06
 
 * 1 minor enchancement:

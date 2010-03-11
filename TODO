@@ -1,0 +1,49 @@
+1.  CRITICAL
+
+    * None.
+
+2.  MINOR
+
+    * Provide Watcher creation option to not display any output;
+      useful by other utility classes which do not want to muddy up
+      the output.  (another level, for instance :none, which displays
+      no output, even on errors.)
+
+    * On errors, hide output levels which had no errors.  For
+      instance, hide [a] and [b] details, but show [c].
+      good a
+      good b
+      bad c
+      bad c.1
+
+    * Update source comments in watcher.rb and event.rb
+
+    * Ensure 78 character max in source files.
+
+    * Trap signals to clean up properly.
+
+    * Log rotation.
+
+    * To allow prolonged daemon runs, delete debug events from @events Array
+        when @events has more than X number of elements.
+
+    * Multiple 'verbose' shows indentation level.
+
+    * Allow more flexible log formatting, such that Watcher yields to a user-supplied method with arity one.  The goal is that Watcher prepares the basic output, yields to the user-supplied formatter, then performs a small amount of post-formatting, if required.  Supposed to allow stripping of @hier if desired.
+
+    * Convert Watcher gem to bones framework.
+
+3.  LOW
+
+    * Figure out how to get ri documentation working.
+
+    * Provide a Watcher.destroy method which closes the Watcher instance and
+      changes the @@watcher class attribute back to nil.
+
+    * Validate data when attributes accessors invoked.
+
+    * Use a Ruby MTA, as opposed to the UNIX mail program.
+
+    * As populate Event instance, remove k,v from Hash as assign, then
+      ensure fail_actions is empty to validate no extra invalid options
+      sent.

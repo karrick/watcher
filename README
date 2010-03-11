@@ -1,0 +1,93 @@
+watcher
+    by Karrick McDermott
+    git://github.com/karrick/watcher.git
+
+== DESCRIPTION:
+
+Watcher provides advanced integrated exception handling and logging
+functionality to your Ruby programs.
+
+This is useful both in the development stage of a program, and while
+in production use, for instance on a server, as Watcher can be
+directed to email generated log files to a specified user in the event
+of errors or warnings.
+
+By combining exception handling and detailed logging facilities,
+Watcher greatly reduces code-bloat and potential program flow logic
+flaws, as Watcher eliminates the necessity to write a tremendous
+amount of boiler-plate code in the form of "begin, rescue, ensure,
+end" blocks.
+
+Watcher also provides a very flexible exception handling capability,
+allowing a programmer to easily direct Watcher what actions to take in
+the event of an exception.  These failure actions may include any
+combination of logging the failure, invoking a Proc object, retrying
+the code, and allowing the exception to propagate up the call-stack by
+re-raising the exception.  Exceptions that are re-raised in a child
+call-stack are caught by the parent call-stack, and are then dealt
+with by the programmer determined rules of the parent call-stack.  All
+this happens while Watcher ensures the logs are properly maintained
+for the various actions taken.
+
+== FEATURES/PROBLEMS:
+
+* Exception handling without the boiler-plate code.
+* Multiple tiers of verbosity.
+* Flexible logging capabilities, including to files, STDERR, and email.
+* Nested, and hierarchical log output for descriptive stack-frame level
+  understanding where an exception was thrown.
+* Ability to change the time format of your logs by supplying an arbitrary
+  Proc to return the time in the format of your choice.
+* Ability to customize the layout of the logs.
+* Email log files automatically, based on number of errors or warnings.
+* Ability to invoke arbitrary sequence of events if exception is thrown,
+  by means of invocation of Proc object.
+
+== SYNOPSIS:
+
+# create Watcher instance with slightly modified defaults
+$watcher = Watcher.create(:output => log_file)
+
+$watcher.debug("starting #{File.basename($0)}") do
+  # Look for CONFIG_PATH.  If not found, log warning then re-write it
+  params = {:tries => 2, :failure => :error,
+            :proc => lambda { |e| write_config(config_path) }}
+  msg = "ensuring existance of config file [#{config_path}]"
+  $watcher.verbose(msg, params) do
+    raise "file not found" unless File.file?(File.expand_path(config_path))
+  end
+
+  # invoke utility, which uses $watcher as well
+  fsc = FileSystemChecker.new(:config_path => config_path)
+  fsc.check_file_systems(:all => all_flag, :remount => remount_flag)
+end
+
+if email_flag and ($watcher.errors > 0 or $watcher.warnings > 0)
+  $watcher.send_email(email, 'FAIL: Required filesystems are not mounted')
+end
+
+== REQUIREMENTS:
+
+* none
+
+== INSTALL:
+
+$ sudo gem install watcher
+
+== LICENSE:
+
+Copyright (c) 2008, Karrick S. McDermott
+
+Permission to use, copy, modify, and/or distribute this software for
+any purpose with or without fee is hereby granted, provided that the
+above copyright notice and this permission notice appear in all
+copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.

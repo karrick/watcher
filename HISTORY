@@ -1,0 +1,89 @@
+== 1.2.2 2009-05-06
+
+* 1 minor enchancement:
+  * Watcher returns the value of the block yielded to.
+
+== 1.2.1 2009-02-24
+
+* 1 minor enchancement:
+  * Modified in-line documentation to match code behavior in regards to possible
+    verbosity levels, and the default verbosity level.
+
+== 1.2.0 2008-07-30
+
+* 6 major enhancements:
+  * Major re-write of entire Watcher code, separating logic into two class
+    files: watcher.rb and event.rb.
+  * Watcher verbosity levels consolidated to three levels: debug, verbose, and
+    always, in order from lowest priority to highest priority.  Debug events
+    will rarely be logged, while always events will always be logged.
+  * The Watcher instantiation parameter, :fail_actions Array, is unsupported
+    and replaced by a Hash named :default_fail.  Like :fail_actions, this
+    represents the set of actions to occur if no other fail actions are
+    specified when invoking one of Watcher's log event methods.  Unlike the
+    :fail_actions Array, this is a Hash, whose possible key/value pairs are
+    described below.
+  * Fail actions logic has been completely rewritten.
+    * Invocation of Watcher.debug, Watcher.verbose, and Watcher.always
+      requires a fail_action parameter.  This Hash must contain a :failure
+      key, equal to either :error or :warn.
+      * If :warn, then an exception will merely cause a warning event to
+        be recorded.
+      * If :error, an exception will cause an error event to be recorded, then
+        re-raise the original exception.
+    * Two other keys are permitted in the fail_action parameter.  The presence
+      of one necessitates the presence of the other.
+      * :tries -- the total number of tries Watcher will attempt to execute
+        the code in the block.
+      * :proc  -- the Proc instance that Watcher will invoke before each
+        retry attempt.
+      * If neither :tries nor :proc is given, Watcher takes action as if
+        :tries was set to 1 and :proc was set to lambda { }.  However, Watcher
+        will throw an ArgumentError exception if :tries is specified, and not
+        a Fixnum with a value of at least 2.
+      * NB:  The Proc will be invokes no more than (:tries - 1) times.  This
+        is very different than Watcher 1.1.0, where the key was :retry, and
+        whose value determined the number of retries that would occur.  In
+        the previous version, the number of times the Proc would be invoked
+        was equal to the :retry value.  This is no longer the case.
+  * Indentation logic re-written.
+    * Log entries suppressed due to Watcher's verbosity setting are queued up.
+      If an exception is thrown, Watcher will replay those previously
+      suppressed log entries to allow a more detailed analysis of the cause of
+      the exception.
+    * Format of log output is nested in a hierarchical fashion, allowing
+      user to more easily trace the progression of tasks when trouble-shooting
+      program output via its logs.
+  * Unit tests written, although perhaps not yet entirely comprehensive.
+
+* 3 minor enhancements:
+  * Allows either append, or overwrite mode for logs.  Watcher can be
+    created with the :write parameter set to either :append or :overwrite.
+    The default is :overwrite.
+  * Watcher will ensure output stream is an actual file before it attempts to
+    send it via email.  If the output stream is not a file, then it logs an
+    error message to the output stream.
+  * Eliminated use of continuations in preference to using the standard retry
+    statement.
+
+== 1.1.0 2008-07-22
+
+* 1 major enhancement:
+  * Initial public release (via RubyForge)
+
+* 4 minor enhancements:
+  * Consolidated the verification stage and the action perform stage to a
+    single pair of methods, as opposed to two methods to verify, and two
+    similar methods to perform.  This was to prevent changes from one section
+    from causing an hard-to-find bug in the other section.
+  * Added ability to track number of warnings and errors.  Warnings are
+    Exceptions that are not re-raised.  Errors are Exceptions that are
+    re-raised.
+  * Added ability to send log output to a specified email address.
+  * Cleaned up RDoc formatting, and improved readability.
+
+== 1.0.0 2008-07-09
+
+* 1 major enhancement:
+  * Initial private release
+  * Major functionality features working.  No critical bugs, just TODO items.

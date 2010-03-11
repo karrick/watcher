@@ -77,7 +77,7 @@ end
 
 desc 'Clear out RDoc and generated packages'
 task :clean => [:clobber_rdoc, :clobber_package] do
-  %w[watcher-debug.log].each do |file|
+  %w[watcher.gemspec watcher-debug.log].each do |file|
     rm(file) if File.file?(file)
   end
 end

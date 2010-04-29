@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#! /usr/bin/env ruby
 
 # Watcher
 #
@@ -19,7 +19,7 @@ class Watcher
 # module Watcher
 
   # :stopdoc:
-  VERSION = '1.2.4'
+  VERSION = '1.2.5'
   LIBPATH = ::File.expand_path(::File.dirname(__FILE__)) + ::File::SEPARATOR
   PATH = ::File.dirname(LIBPATH) + ::File::SEPARATOR
   # :startdoc:
@@ -118,7 +118,8 @@ class Watcher
   # * It wasn't designed to be directly used by client code, but I suppose it
   #   could be modified by consumer code in this script if the situation
   #   warranted.
-  @@verbosity_levels = {:debug => 0, :verbose => 1, :always => 2}
+  @@verbosity_levels =
+    { :debug => 0, :verbose => 1, :always => 2, :quiet => 2 }
 
   # A String to include inside the log entry when an Exception is thrown.
   # * This may be required in some circumstances where a separate log
@@ -161,7 +162,7 @@ class Watcher
   #   regular file, simply make the connection, and pass it to your Watcher
   #   instance.
   # * The default value of @output is an IO instance of STDOUT.
-  def Watcher.create(attributes={})
+  def self.create(attributes={})
     @@watcher ||= new(attributes)
   end
 
@@ -205,8 +206,7 @@ class Watcher
     if File.file?(@output_path)
       system "mail -s '#{subject}' #{email} < '#{@output_path}'"
     else
-      msg = "Cannot send log file as email because no log file was created"
-      raise ArgumentError.new(msg)
+      raise ArgumentError, "Cannot send log file as email because no log file was created"
     end
   end
 
@@ -214,11 +214,11 @@ class Watcher
   private
   ########################################
 
-  # The Watcher.initialize method is called by the Watcher.new method as
+  # The Watcher#initialize method is called by the Watcher.new method as
   # normal, however because the Watcher.new method is a private method, the
   # only way to create a new Watcher object is to use the Watcher.create
   # method, which in turn invokes Watcher.new, which--finally--invokes
-  # Watcher.initialize.
+  # Watcher#initialize.
   def initialize(attributes={}) #:nodoc: #:notnew:
     # Watcher debugging facility
     if WATCHER_DEBUG
@@ -226,12 +226,12 @@ class Watcher
       begin
         # mode 'a' appends to file, and 'w' truncates file if not empty.
         @debug_out = File.open(WATCHER_DEBUG_OUTPUT_FILENAME,'a')
-      rescue Exception => e
+      rescue Exception
         # if we couldn't open it, just send debugging data to STDERR,
         # and insert a message indicating the failure.
         @debug_out = STDERR
         @debug_out << "could not open [#{WATCHER_DEBUG_OUTPUT_FILENAME}]. " \
-           + e.message + "\n"
+           + $!.message + "\n"
       end
       @debug_out << "****************************************\n"
       @debug_out << Time.now.to_s + "* starting " + File.basename($0) + "\n"
@@ -261,7 +261,7 @@ class Watcher
       :merge_newlines => ' (LF) ', :output_path => $stderr,
       :time_formatter => lambda { Time.now.to_s },
       :verbosity => :always,
-      :write => :overwrite
+      :write => :append,
     }.merge(attributes)
 
     # Watcher debugging facility
@@ -543,7 +543,7 @@ class Watcher
   end
 
   # Set to true when Watcher should execute itself in debugging mode.
-  WATCHER_DEBUG = true
+  WATCHER_DEBUG = false
 
   # Set to true when debugging Watcher failure actions.
   WATCHER_DEBUG_FAIL_ACTIONS = false
